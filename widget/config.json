@@ -1,0 +1,112 @@
+{
+  "apiEndpoint": "https://YOUR_API_ID.execute-api.us-east-1.amazonaws.com/prod",
+  "navigation": {
+    "qa": {
+      "label": "Ask Operations",
+      "icon": "message-circle",
+      "type": "chat",
+      "hidden": false
+    },
+    "overview": {
+      "label": "Operations",
+      "icon": "chart-bar",
+      "type": "dashboard",
+      "subItems": [
+        {
+          "id": "sales",
+          "label": "Executive Overview",
+          "icon": "📊",
+          "dashboardId": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeee01",
+          "sheetId": "sheet-executive-overview",
+          "mobileSheetId": "sheet-executive-overview-mobile",
+          "filters": ["facility", "severity", "defect_type", "detection_method", "event_date"]
+        },
+        {
+          "id": "quality",
+          "label": "Defect & Root Cause",
+          "icon": "📋",
+          "dashboardId": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeee01",
+          "sheetId": "sheet-defect-root-cause",
+          "filters": ["severity", "defect_type", "detection_method", "event_date"]
+        },
+        {
+          "id": "suppliers",
+          "label": "Facility & Product",
+          "icon": "🚚",
+          "dashboardId": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeee01",
+          "sheetId": "sheet-facility-product",
+          "filters": ["facility", "severity", "event_date"]
+        }
+      ]
+    }
+  },
+  "branding": {
+    "appName": "Artisan Furnishings",
+    "appIcon": "🪑",
+    "tagline": "Operations Portal — Sales, Quality, Suppliers & AI Assistant",
+    "primaryColor": "#5D4037",
+    "secondaryColor": "#8D6E63"
+  },
+  "datasetIdentifier": "YOUR_DATASET_IDENTIFIER",
+  "filters": [
+    {
+      "id": "facility",
+      "label": "Facility",
+      "column": "facility",
+      "type": "multiselect",
+      "allLabel": "All Facilities",
+      "options": ["Atlanta", "Chicago", "Portland"]
+    },
+    {
+      "id": "severity",
+      "label": "Severity",
+      "column": "severity",
+      "type": "multiselect",
+      "allLabel": "All Severities",
+      "options": ["Critical", "High", "Medium", "Low"]
+    },
+    {
+      "id": "defect_type",
+      "label": "Defect Type",
+      "column": "defect_type",
+      "type": "multiselect",
+      "allLabel": "All Defect Types",
+      "options": ["Material Defect", "Process Deviation", "Equipment Malfunction", "Operator Error", "Design Issue", "Environmental"]
+    },
+    {
+      "id": "detection_method",
+      "label": "Detection Method",
+      "column": "detection_method",
+      "type": "multiselect",
+      "allLabel": "All Detection Methods",
+      "options": ["Production Inspection", "Final QA", "Customer Return", "Audit"]
+    },
+    {
+      "id": "event_date",
+      "label": "Event Date",
+      "column": "event_timestamp",
+      "type": "daterange"
+    }
+  ],
+  "chat": {
+    "agentId": "YOUR_QUICKSIGHT_AGENT_ID",
+    "panelTitle": "Operations Assistant",
+    "toggleLabel": "AI Assistant"
+  },
+  "session": {
+    "expirationMinutes": 60
+  },
+  "auth": {
+    "userPoolDomain": "https://YOUR_COGNITO_DOMAIN_PREFIX.auth.us-east-1.amazoncognito.com",
+    "clientId": "YOUR_COGNITO_APP_CLIENT_ID",
+    "region": "us-east-1",
+    "scopes": ["openid", "email", "profile"],
+    "redirectUri": "http://localhost:8080/index.html",
+    "logoutUri": "http://localhost:8080/index.html"
+  },
+  "chatEnabled": true,
+  "containerId": "quicksuite-widget-container",
+  "errorMessage": "Analytics are temporarily unavailable. Please try again in a moment.",
+  "fallbackMode": true,
+  "loadingScreen": true
+}

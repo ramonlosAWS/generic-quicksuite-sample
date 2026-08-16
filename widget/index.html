@@ -1,0 +1,981 @@
+<!DOCTYPE html>
+<!--
+  Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+  SPDX-License-Identifier: Apache-2.0
+
+  QuickSuite Sample — Split-Pane Layout (Registered User Variant)
+
+  This host page is FULLY CONFIG-DRIVEN. Edit config.json to re-skin for
+  any use case: change branding, navigation, filters, and chat settings.
+  No HTML edits needed for a new deployment.
+-->
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Artisan Furnishings — Operations Portal</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      /* Initial branding — matches config.json defaults for instant first paint.
+         Config.json can override these at runtime for dynamic re-skinning. */
+      --sidebar-collapsed: 64px;
+      --sidebar-expanded: 200px;
+      --topbar-height: 56px;
+      --chat-width: 380px;
+      --color-primary: #5D4037;
+      --color-secondary: #8D6E63;
+      --color-accent: #FF8A65;
+      --cream: #EFEBE9;
+      --cream-dark: #D7CCC8;
+      --text-primary: #3E2723;
+      --text-secondary: #6D4C41;
+      --white: #ffffff;
+      --shadow-sm: 0 1px 3px rgba(0,0,0,0.08);
+      --radius: 12px;
+      --transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, sans-serif;
+      background: #F5F0ED;
+      color: var(--text-primary);
+      height: 100vh;
+      height: 100dvh; /* mobile: track the dynamic viewport (browser chrome) */
+      overflow: hidden;
+      opacity: 0;
+      transition: opacity 0.25s ease-in;
+    }
+    body.ready { opacity: 1; }
+
+    .topbar {
+      position: fixed; top: 0; left: 0; right: 0;
+      height: var(--topbar-height);
+      background: var(--white);
+      border-bottom: 1px solid var(--cream-dark);
+      box-shadow: var(--shadow-sm);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 20px; z-index: 100;
+    }
+    .topbar-left { display: flex; align-items: center; gap: 12px; }
+    .topbar-logo { font-size: 24px; line-height: 1; }
+    .topbar-brand { font-size: 16px; font-weight: 600; color: var(--text-primary); letter-spacing: -0.3px; }
+    .topbar-tagline { font-size: 11px; color: var(--text-secondary); margin-left: 12px; }
+    .topbar-right { display: flex; align-items: center; gap: 12px; }
+
+    .btn-toggle-chat {
+      display: flex; align-items: center; gap: 8px;
+      padding: 8px 14px; border: 1px solid var(--cream-dark); border-radius: 8px;
+      background: var(--white); color: var(--text-secondary);
+      font-size: 13px; font-weight: 500; cursor: pointer; transition: all var(--transition);
+    }
+    .btn-toggle-chat:hover { background: var(--cream); border-color: var(--color-secondary); }
+    .btn-toggle-chat.active { background: var(--color-primary); border-color: var(--color-primary); color: var(--white); }
+    .btn-toggle-chat svg { width: 16px; height: 16px; }
+
+    .btn-switch-layout {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 8px 12px; border: 1px solid var(--cream-dark); border-radius: 8px;
+      background: var(--white); color: var(--text-secondary);
+      font-size: 13px; font-weight: 500; text-decoration: none; cursor: pointer;
+      transition: all var(--transition); white-space: nowrap;
+    }
+    .btn-switch-layout:hover { background: var(--cream); border-color: var(--color-secondary); }
+    .btn-switch-layout svg { width: 15px; height: 15px; }
+
+    .app-shell { display: flex; position: fixed; top: var(--topbar-height); left: 0; right: 0; bottom: 0; }
+
+    .sidebar {
+      width: var(--sidebar-collapsed); background: var(--color-primary);
+      display: flex; flex-direction: column; padding: 16px 0;
+      transition: width var(--transition); overflow: hidden; z-index: 50;
+    }
+    .sidebar:hover { width: var(--sidebar-expanded); }
+    .sidebar-nav { display: flex; flex-direction: column; gap: 4px; padding: 0 8px; }
+
+    .nav-item {
+      display: flex; align-items: center; gap: 12px;
+      padding: 12px 14px; border-radius: 8px;
+      color: rgba(255,255,255,0.7); text-decoration: none; cursor: pointer;
+      transition: all var(--transition); white-space: nowrap;
+      border-left: 3px solid transparent; margin-left: -8px; padding-left: 18px;
+    }
+    .nav-item:hover { background: rgba(255,255,255,0.08); color: var(--white); }
+    .nav-item.active { border-left-color: var(--color-accent); background: rgba(255,255,255,0.1); color: var(--white); }
+    .nav-icon { font-size: 18px; width: 24px; text-align: center; flex-shrink: 0; }
+    .nav-label { font-size: 13px; font-weight: 500; opacity: 0; transition: opacity var(--transition); }
+    .sidebar:hover .nav-label { opacity: 1; }
+    .sidebar-footer { margin-top: auto; padding: 12px 16px; border-top: 1px solid rgba(255,255,255,0.1); }
+    .sidebar-footer-text { font-size: 10px; color: rgba(255,255,255,0.4); white-space: nowrap; }
+
+    .main-content { flex: 1; padding: 16px; overflow-y: auto; }
+
+    .filter-bar {
+      display: flex; align-items: center; gap: 16px; padding: 10px 16px;
+      background: var(--white); border-bottom: 1px solid var(--cream-dark);
+      border-radius: var(--radius) var(--radius) 0 0;
+    }
+    .filter-bar:empty { display: none; }
+    .filter-bar-label { font-size: 12px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; }
+    .filter-select {
+      appearance: none; -webkit-appearance: none;
+      padding: 8px 32px 8px 12px; border: 1px solid var(--cream-dark); border-radius: 8px;
+      background: var(--cream); color: var(--text-primary);
+      font-size: 13px; font-weight: 500; cursor: pointer; transition: all var(--transition); min-width: 160px;
+    }
+    .filter-select:hover { border-color: var(--color-secondary); background: var(--white); }
+    .filter-select:focus { outline: none; border-color: var(--color-accent); box-shadow: 0 0 0 3px rgba(255,138,101,0.15); }
+    .filter-group { position: relative; display: flex; align-items: center; gap: 8px; }
+    .filter-group-label { font-size: 12px; color: var(--text-secondary); font-weight: 500; }
+
+    /* Multi-select filter control */
+    .filter-ms { position: relative; }
+    .filter-ms-btn {
+      appearance: none; -webkit-appearance: none;
+      padding: 8px 30px 8px 12px; border: 1px solid var(--cream-dark); border-radius: 8px;
+      background: var(--cream); color: var(--text-primary); font-size: 13px; font-weight: 500;
+      cursor: pointer; min-width: 150px; text-align: left; position: relative; white-space: nowrap;
+    }
+    .filter-ms-btn::after { content: '▾'; position: absolute; right: 12px; top: 50%; transform: translateY(-50%); font-size: 10px; color: var(--text-secondary); }
+    .filter-ms-btn:hover { border-color: var(--color-secondary); background: var(--white); }
+    .filter-ms-btn:focus { outline: none; border-color: var(--color-accent); box-shadow: 0 0 0 3px rgba(255,138,101,0.15); }
+    .filter-ms-pop {
+      display: none; position: absolute; top: calc(100% + 4px); left: 0; z-index: 300;
+      background: var(--white); border: 1px solid var(--cream-dark); border-radius: 8px;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.15); padding: 6px; min-width: 200px; max-height: 280px; overflow-y: auto;
+    }
+    .filter-ms.open .filter-ms-pop { display: block; }
+    .filter-ms-row { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 6px; font-size: 13px; color: var(--text-primary); cursor: pointer; }
+    .filter-ms-row:hover { background: var(--cream); }
+    .filter-ms-row input { cursor: pointer; }
+    .filter-ms-clear { width: 100%; margin-top: 4px; padding: 7px 8px; border: none; border-top: 1px solid var(--cream-dark); background: transparent; color: var(--color-primary); font-size: 12px; font-weight: 600; cursor: pointer; text-align: left; }
+    .filter-ms-clear:hover { background: var(--cream); }
+
+    /* Date-range filter control */
+    .filter-date { display: flex; align-items: center; gap: 6px; }
+    .filter-date-input { padding: 7px 10px; border: 1px solid var(--cream-dark); border-radius: 8px; background: var(--cream); color: var(--text-primary); font-size: 13px; }
+    .filter-date-input:hover { border-color: var(--color-secondary); background: var(--white); }
+    .filter-date-input:focus { outline: none; border-color: var(--color-accent); box-shadow: 0 0 0 3px rgba(255,138,101,0.15); }
+    .filter-date-sep { color: var(--text-secondary); font-size: 12px; }
+
+    /* Date-range popover (single box: presets + last-N + custom range) */
+    .filter-date-pop { min-width: 270px; padding: 10px; }
+    .filter-date-presets { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 8px; }
+    .filter-date-preset { padding: 7px 8px; border: 1px solid var(--cream-dark); border-radius: 6px; background: var(--cream); color: var(--text-primary); font-size: 12px; font-weight: 500; cursor: pointer; text-align: center; }
+    .filter-date-preset:hover { border-color: var(--color-secondary); background: var(--white); }
+    .filter-date-lastn { display: flex; align-items: center; gap: 6px; margin-bottom: 10px; font-size: 12px; color: var(--text-secondary); }
+    .filter-date-num { width: 54px; padding: 6px 8px; border: 1px solid var(--cream-dark); border-radius: 6px; background: var(--cream); color: var(--text-primary); font-size: 13px; }
+    .filter-date-unit { padding: 6px 8px; border: 1px solid var(--cream-dark); border-radius: 6px; background: var(--cream); color: var(--text-primary); font-size: 13px; cursor: pointer; }
+    .filter-date-apply { margin-left: auto; padding: 6px 12px; border: none; border-radius: 6px; background: var(--color-primary); color: var(--white); font-size: 12px; font-weight: 600; cursor: pointer; }
+    .filter-date-apply:hover { background: var(--color-secondary); }
+    .filter-date-range { display: flex; gap: 8px; margin-bottom: 4px; }
+    .filter-date-field { display: flex; flex-direction: column; gap: 3px; flex: 1; font-size: 11px; color: var(--text-secondary); }
+    .filter-date-field .filter-date-input { width: 100%; }
+    .filter-date-full { width: 100%; margin-top: 4px; padding: 7px 8px; border: none; border-top: 1px solid var(--cream-dark); background: transparent; color: var(--color-primary); font-size: 12px; font-weight: 600; cursor: pointer; text-align: left; }
+    .filter-date-full:hover { background: var(--cream); }
+
+    .dashboard-container {
+      background: var(--white); border-radius: 0 0 var(--radius) var(--radius);
+      box-shadow: var(--shadow-sm); border: 1px solid var(--cream-dark); border-top: none;
+      /* Dynamic height: grow to fit the embedded dashboard's content (the SDK
+         resizes the iframe via resizeHeightOnSizeChangedEvent). min-height keeps
+         a sensible floor; .main-content provides the scroll when it overflows. */
+      min-height: calc(100% - 48px); overflow: visible;
+    }
+    .dashboard-container.no-filters { border-radius: var(--radius); border-top: 1px solid var(--cream-dark); min-height: 100%; }
+    #quicksuite-widget-container { width: 100%; min-height: calc(100vh - var(--topbar-height) - 80px); }
+    /* Hide the widget's built-in nav bar — the host page sidebar handles navigation */
+    #quicksuite-widget-container .qs-nav { display: none !important; }
+    #quicksuite-widget-container .qs-sub-nav { display: none !important; }
+
+    .chat-panel {
+      width: var(--chat-width); background: var(--white); border-left: 1px solid var(--cream-dark);
+      display: flex; flex-direction: column; transition: all var(--transition);
+    }
+    .chat-panel.collapsed { width: 0; border: none; overflow: hidden; }
+    .chat-panel-header {
+      padding: 14px 16px; border-bottom: 1px solid var(--cream-dark);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .chat-panel-title { font-size: 14px; font-weight: 600; color: var(--text-primary); display: flex; align-items: center; gap: 8px; }
+    .chat-panel-badge { font-size: 10px; font-weight: 600; background: var(--color-accent); color: var(--white); padding: 2px 6px; border-radius: 4px; }
+    .btn-close-chat {
+      width: 28px; height: 28px; border: none; background: var(--cream); border-radius: 6px;
+      cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--text-secondary);
+    }
+    .btn-close-chat:hover { background: var(--cream-dark); }
+    .chat-embed-container { flex: 1; overflow: hidden; }
+    #quickchat-container { width: 100%; height: 100%; }
+
+    .footer-bar {
+      position: fixed; bottom: 0; left: var(--sidebar-collapsed); right: 0; height: 28px;
+      background: var(--cream); border-top: 1px solid var(--cream-dark);
+      display: flex; align-items: center; justify-content: center; z-index: 50;
+    }
+    .footer-text { font-size: 11px; color: var(--text-secondary); opacity: 0.7; }
+
+    @media (max-width: 1024px) { .chat-panel { width: 320px; } }
+    @media (max-width: 768px) {
+      /* Compact top bar: brand + icon-only buttons */
+      .topbar { padding: 0 12px; }
+      .topbar-tagline { display: none; }
+      .btn-switch-layout span { display: none; }
+      .btn-switch-layout { padding: 8px; }
+      .btn-toggle-chat span { display: none; }
+      .btn-toggle-chat { padding: 8px; }
+
+      /* Sidebar becomes a horizontal, scrollable nav strip under the top bar
+         (labels always visible — no hover on touch). */
+      .app-shell { flex-direction: column; }
+      .sidebar,
+      .sidebar:hover { width: 100%; height: auto; flex-shrink: 0; padding: 0; overflow-x: auto; overflow-y: hidden; -webkit-overflow-scrolling: touch; }
+      .sidebar-nav { flex-direction: row; gap: 2px; padding: 6px 8px; }
+      .nav-item { flex-shrink: 0; margin-left: 0; padding: 8px 12px; border-left: none; border-bottom: 3px solid transparent; }
+      .nav-item.active { border-left-color: transparent; border-bottom-color: var(--color-accent); }
+      .nav-label { opacity: 1; }
+      .sidebar-footer { display: none; }
+
+      /* Filter bar wraps instead of overflowing; popovers stay on-screen */
+      .main-content { padding: 10px; }
+      .filter-bar { flex-wrap: wrap; gap: 10px; padding: 10px 12px; }
+      .filter-ms-pop { max-width: calc(100vw - 48px); }
+
+      /* Chat panel is a full-screen overlay (starts collapsed on mobile — see
+         renderShell) */
+      .chat-panel { position: fixed; top: var(--topbar-height); right: 0; bottom: 0; width: 100%; z-index: 200; }
+      .chat-panel.collapsed { transform: translateX(100%); }
+      .footer-bar { left: 0; }
+    }
+  </style>
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="topbar-left">
+      <span class="topbar-logo" id="app-icon">🪑</span>
+      <span class="topbar-brand" id="app-name">Artisan Furnishings</span>
+      <span class="topbar-tagline" id="app-tagline">Operations Portal — Sales, Quality, Suppliers & AI Assistant</span>
+    </div>
+    <div class="topbar-right">
+      <a class="btn-switch-layout" id="switch-layout" href="index-topnav.html" title="Switch to the classic top-navigation layout">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3h18v4H3z"/><path d="M3 10h5v11H3z"/><path d="M11 10h10v11H11z"/></svg>
+        <span>Top-nav layout</span>
+      </a>
+      <button class="btn-toggle-chat active" id="btn-toggle-chat" onclick="toggleChat()" aria-expanded="true" aria-controls="chat-panel">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+        </svg>
+        <span id="chat-toggle-label">AI Assistant</span>
+      </button>
+    </div>
+  </header>
+
+  <div class="app-shell">
+    <nav class="sidebar">
+      <div class="sidebar-nav" id="sidebar-nav"></div>
+      <div class="sidebar-footer"><div class="sidebar-footer-text">Powered by QuickSight</div></div>
+    </nav>
+
+    <div class="main-content" id="main-content">
+      <div class="filter-bar" id="filter-bar"></div>
+      <div class="dashboard-container" id="dashboard-container">
+        <div id="quicksuite-widget-container" data-initial-tab="overview" data-initial-item="" data-no-chat-bubble></div>
+      </div>
+    </div>
+
+    <aside class="chat-panel" id="chat-panel">
+      <div class="chat-panel-header">
+        <div class="chat-panel-title">
+          <span>✨</span>
+          <span id="chat-panel-title-text">AI Assistant</span>
+          <span class="chat-panel-badge">AI</span>
+        </div>
+        <button class="btn-close-chat" onclick="toggleChat()" aria-label="Close chat">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="chat-embed-container"><div id="quickchat-container"></div></div>
+    </aside>
+  </div>
+
+  <div class="footer-bar"><span class="footer-text">Powered by Amazon QuickSight</span></div>
+
+  <script src="https://unpkg.com/amazon-quicksight-embedding-sdk@2.11.3/dist/quicksight-embedding-js-sdk.min.js"></script>
+  <script src="./quicksuite-widget.js"></script>
+
+  <script>
+    // =========================================================================
+    // CONFIG-DRIVEN HOST PAGE — all customization comes from config.json
+    //
+    // App-level filtering uses the QuickSight Embedding SDK filter-group API.
+    // Runtime filter groups MUST be scoped to the currently selected sheet, so
+    // filters are re-applied on every sheet change. Selections live in
+    // _filterState and are preserved across sheets; each sheet shows only the
+    // filters listed in its config (subItem.filters), and a filter's selection
+    // carries over to any other sheet that also enables it.
+    // =========================================================================
+    var _config = null;
+    var _subItems = [];
+    var _filtersById = {};      // filter id -> filter def
+    var _datasetDefault = '';   // default dataset identifier
+    var _currentSubItem = null; // active sub-item (sheet) config
+    var _currentSheetId = null; // active sheet id
+    var _filterState = {};      // filter id -> { values:[], start:'', end:'' } (preserved across sheets)
+
+    // Load config and render the host page shell
+    (function() {
+      fetch('./config.json')
+        .then(function(r) { return r.json(); })
+        .then(function(config) {
+          _config = config;
+          renderShell(config);
+          document.body.classList.add('ready');
+        })
+        .catch(function(err) {
+          console.error('[Host] Failed to load config.json:', err);
+          document.body.classList.add('ready');
+        });
+    })();
+
+    function renderShell(config) {
+      var branding = config.branding || {};
+      var chat = config.chat || {};
+      var nav = config.navigation || {};
+      _datasetDefault = config.datasetIdentifier || '';
+
+      // Index filters by id and seed selection state
+      (config.filters || []).forEach(function(f) {
+        var id = f.id || f.column;
+        f.__id = id;
+        _filtersById[id] = f;
+        _filterState[id] = { values: [], start: '', end: '' };
+      });
+
+      // Apply branding colors as CSS variables
+      var root = document.documentElement;
+      if (branding.primaryColor) root.style.setProperty('--color-primary', branding.primaryColor);
+      if (branding.secondaryColor) root.style.setProperty('--color-secondary', branding.secondaryColor);
+
+      // Top bar
+      document.getElementById('app-icon').textContent = branding.appIcon || '📊';
+      document.getElementById('app-name').textContent = branding.appName || 'Analytics Portal';
+      document.getElementById('app-tagline').textContent = branding.tagline || '';
+      document.title = (branding.appName || 'QuickSuite') + (branding.tagline ? ' — ' + branding.tagline : '');
+
+      // Chat panel
+      document.getElementById('chat-panel-title-text').textContent = chat.panelTitle || 'AI Assistant';
+      document.getElementById('chat-toggle-label').textContent = chat.toggleLabel || 'AI Assistant';
+
+      // On mobile the chat panel is a full-screen overlay — start it closed so
+      // it doesn't cover the dashboard on load. (Desktop keeps it docked open.)
+      if (window.innerWidth <= 768) {
+        var chatPanelEl = document.getElementById('chat-panel');
+        var chatBtnEl = document.getElementById('btn-toggle-chat');
+        chatPanelEl.classList.add('collapsed');
+        chatBtnEl.classList.remove('active');
+        chatBtnEl.setAttribute('aria-expanded', 'false');
+      }
+
+      // Sidebar nav — driven from navigation.overview.subItems
+      var dashboardTab = null;
+      for (var key in nav) {
+        if (nav[key].type === 'dashboard' && nav[key].subItems) {
+          dashboardTab = nav[key];
+          break;
+        }
+      }
+
+      var sidebarEl = document.getElementById('sidebar-nav');
+      if (dashboardTab && dashboardTab.subItems) {
+        _subItems = dashboardTab.subItems;
+        dashboardTab.subItems.forEach(function(item, i) {
+          var a = document.createElement('a');
+          a.className = 'nav-item' + (i === 0 ? ' active' : '');
+          a.setAttribute('data-view', item.id);
+          a.setAttribute('data-sheet-id', item.sheetId);
+          // Keyboard-operable (the element has no href): expose as a button.
+          a.setAttribute('role', 'button');
+          a.setAttribute('tabindex', '0');
+          a.setAttribute('aria-label', item.label);
+          if (i === 0) a.setAttribute('aria-current', 'page');
+          // Build with textContent (no innerHTML) so config labels can't inject markup.
+          var iconSpan = document.createElement('span');
+          iconSpan.className = 'nav-icon';
+          iconSpan.setAttribute('aria-hidden', 'true');
+          iconSpan.textContent = item.icon || '📄';
+          var labelSpan = document.createElement('span');
+          labelSpan.className = 'nav-label';
+          labelSpan.textContent = item.label;
+          a.appendChild(iconSpan);
+          a.appendChild(labelSpan);
+          a.onclick = function() { switchSheet(item, a); };
+          a.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar') {
+              e.preventDefault();
+              switchSheet(item, a);
+            }
+          });
+          sidebarEl.appendChild(a);
+        });
+        _currentSubItem = _subItems[0];
+        _currentSheetId = resolveSheetId(_subItems[0]);
+        document.getElementById('quicksuite-widget-container').setAttribute('data-initial-item', _subItems[0].id);
+      }
+
+      // Initial filter bar for the first sheet
+      renderFilterBar(_currentSubItem);
+
+      // Once the dashboard frame is ready, reconcile filters for the first sheet
+      whenFrameReady(function() { reconcileCurrentSheet(); });
+
+      // Close any open multi-select popover when clicking outside it.
+      // exceptEl (optional) is left open (e.g. the popover being toggled).
+      function closeMultiSelects(exceptEl) {
+        var open = document.querySelectorAll('.filter-ms.open');
+        for (var i = 0; i < open.length; i++) {
+          if (open[i] === exceptEl) continue;
+          open[i].classList.remove('open');
+          var btn = open[i].querySelector('.filter-ms-btn');
+          if (btn) btn.setAttribute('aria-expanded', 'false');
+        }
+      }
+
+      document.addEventListener('click', function(e) {
+        var open = document.querySelectorAll('.filter-ms.open');
+        for (var i = 0; i < open.length; i++) {
+          if (!open[i].contains(e.target)) {
+            open[i].classList.remove('open');
+            var btn = open[i].querySelector('.filter-ms-btn');
+            if (btn) btn.setAttribute('aria-expanded', 'false');
+          }
+        }
+      });
+
+      // Clicks inside the embedded dashboard happen in a cross-origin iframe,
+      // so they never bubble to this document and the click handler above never
+      // fires. When focus moves into an iframe the parent window blurs — use
+      // that to close any open popover so clicking the dashboard dismisses it.
+      window.addEventListener('blur', function() {
+        setTimeout(function() {
+          if (document.activeElement && document.activeElement.tagName === 'IFRAME') {
+            closeMultiSelects();
+          }
+        }, 0);
+      });
+    }
+
+    // Resolve the sheet to display for a sub-item on the current viewport.
+    // Mirrors the widget's per-viewport sheet support: a sub-item may define
+    // mobileSheetId (and mobileDashboardId) for screens ≤768px.
+    function resolveSheetId(item) {
+      return (window.innerWidth <= 768 && item.mobileSheetId) ? item.mobileSheetId : item.sheetId;
+    }
+
+    // Filter defs enabled for a sub-item (sheet), in config order.
+    // subItem.filters (array of ids) selects a subset; omit it to enable all.
+    function enabledFiltersFor(subItem) {
+      var all = _config.filters || [];
+      if (!subItem || !Array.isArray(subItem.filters)) return all;
+      return subItem.filters.map(function(id) { return _filtersById[id]; }).filter(Boolean);
+    }
+
+    // (Re)render the filter bar for a sub-item, restoring current selections.
+    function renderFilterBar(subItem) {
+      var bar = document.getElementById('filter-bar');
+      bar.innerHTML = '';
+      var defs = enabledFiltersFor(subItem);
+      var container = document.getElementById('dashboard-container');
+
+      if (!defs.length) { container.classList.add('no-filters'); return; }
+      container.classList.remove('no-filters');
+
+      var label = document.createElement('span');
+      label.className = 'filter-bar-label';
+      label.textContent = 'Filters';
+      bar.appendChild(label);
+
+      defs.forEach(function(def) {
+        var type = def.type || 'multiselect';
+        bar.appendChild(type === 'daterange' ? buildDateControl(def) : buildMultiSelectControl(def));
+      });
+    }
+
+    // ---- Multi-select (category) control ----
+    function buildMultiSelectControl(def) {
+      var id = def.__id;
+      var group = document.createElement('div');
+      group.className = 'filter-group';
+      var glabel = document.createElement('span');
+      glabel.className = 'filter-group-label';
+      glabel.textContent = def.label;
+      group.appendChild(glabel);
+
+      var ms = document.createElement('div');
+      ms.className = 'filter-ms';
+
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'filter-ms-btn';
+      btn.setAttribute('aria-haspopup', 'true');
+      btn.setAttribute('aria-expanded', 'false');
+      updateMsButtonLabel(btn, def);
+      btn.onclick = function(e) {
+        e.stopPropagation();
+        var open = ms.classList.toggle('open');
+        btn.setAttribute('aria-expanded', String(open));
+        var others = document.querySelectorAll('.filter-ms.open');
+        for (var i = 0; i < others.length; i++) { if (others[i] !== ms) others[i].classList.remove('open'); }
+      };
+      ms.appendChild(btn);
+
+      var pop = document.createElement('div');
+      pop.className = 'filter-ms-pop';
+
+      (def.options || []).forEach(function(opt) {
+        var row = document.createElement('label');
+        row.className = 'filter-ms-row';
+        var cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.value = opt;
+        cb.checked = _filterState[id].values.indexOf(opt) !== -1;
+        cb.onchange = function() {
+          var vals = _filterState[id].values;
+          if (cb.checked) { if (vals.indexOf(opt) === -1) vals.push(opt); }
+          else { var ix = vals.indexOf(opt); if (ix !== -1) vals.splice(ix, 1); }
+          updateMsButtonLabel(btn, def);
+          reconcileCurrentSheet();
+        };
+        var txt = document.createElement('span');
+        txt.textContent = opt;
+        row.appendChild(cb);
+        row.appendChild(txt);
+        pop.appendChild(row);
+      });
+
+      var clear = document.createElement('button');
+      clear.type = 'button';
+      clear.className = 'filter-ms-clear';
+      clear.textContent = def.allLabel || 'All';
+      clear.onclick = function() {
+        _filterState[id].values = [];
+        var boxes = pop.querySelectorAll('input[type=checkbox]');
+        for (var i = 0; i < boxes.length; i++) boxes[i].checked = false;
+        updateMsButtonLabel(btn, def);
+        reconcileCurrentSheet();
+      };
+      pop.appendChild(clear);
+
+      ms.appendChild(pop);
+      group.appendChild(ms);
+      return group;
+    }
+
+    function updateMsButtonLabel(btn, def) {
+      var vals = _filterState[def.__id].values;
+      if (!vals.length) btn.textContent = def.allLabel || 'All';
+      else if (vals.length === 1) btn.textContent = vals[0];
+      else btn.textContent = vals.length + ' selected';
+    }
+
+    // ---- Date-range control ----
+    // A single popover (reusing the .filter-ms open/close + click-outside logic)
+    // containing: relative presets, a custom "Last N days/weeks/months" row, a
+    // custom From/To range, and an optional "Full range" (config min/max).
+    function buildDateControl(def) {
+      var id = def.__id;
+      var group = document.createElement('div');
+      group.className = 'filter-group';
+      var glabel = document.createElement('span');
+      glabel.className = 'filter-group-label';
+      glabel.textContent = def.label;
+      group.appendChild(glabel);
+
+      var ms = document.createElement('div');
+      ms.className = 'filter-ms';
+
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'filter-ms-btn';
+      btn.setAttribute('aria-haspopup', 'true');
+      btn.setAttribute('aria-expanded', 'false');
+      btn.onclick = function(e) {
+        e.stopPropagation();
+        var open = ms.classList.toggle('open');
+        btn.setAttribute('aria-expanded', String(open));
+        var others = document.querySelectorAll('.filter-ms.open');
+        for (var i = 0; i < others.length; i++) { if (others[i] !== ms) others[i].classList.remove('open'); }
+      };
+      ms.appendChild(btn);
+
+      var pop = document.createElement('div');
+      pop.className = 'filter-ms-pop filter-date-pop';
+
+      // Custom From/To inputs (declared early so presets can sync them)
+      var from = document.createElement('input');
+      from.type = 'date'; from.className = 'filter-date-input';
+      from.setAttribute('aria-label', def.label + ' from');
+      var to = document.createElement('input');
+      to.type = 'date'; to.className = 'filter-date-input';
+      to.setAttribute('aria-label', def.label + ' to');
+      if (def.min) { from.min = def.min; to.min = def.min; }
+      if (def.max) { from.max = def.max; to.max = def.max; }
+
+      function syncInputs() {
+        var st = _filterState[id];
+        from.value = st.start || '';
+        to.value = st.end || '';
+        updateDateLabel(btn, def);
+      }
+
+      // --- Relative presets ---
+      var presets = def.presets || [
+        { label: 'Last 7 days',    n: 7,  unit: 'day' },
+        { label: 'Last 30 days',   n: 30, unit: 'day' },
+        { label: 'Last 3 months',  n: 3,  unit: 'month' },
+        { label: 'Last 12 months', n: 12, unit: 'month' }
+      ];
+      var presetWrap = document.createElement('div');
+      presetWrap.className = 'filter-date-presets';
+      presets.forEach(function(p) {
+        var b = document.createElement('button');
+        b.type = 'button'; b.className = 'filter-date-preset'; b.textContent = p.label;
+        b.onclick = function() {
+          var r = computeRelativeRange(p.n, p.unit);
+          applyDateRange(def, r.start, r.end, p.label);
+          syncInputs();
+        };
+        presetWrap.appendChild(b);
+      });
+      pop.appendChild(presetWrap);
+
+      // --- Custom "Last N [unit]" ---
+      var lastNWrap = document.createElement('div');
+      lastNWrap.className = 'filter-date-lastn';
+      var lnLabel = document.createElement('span'); lnLabel.textContent = 'Last';
+      var lnNum = document.createElement('input');
+      lnNum.type = 'number'; lnNum.min = '1'; lnNum.value = '14'; lnNum.className = 'filter-date-num';
+      lnNum.setAttribute('aria-label', def.label + ' last N amount');
+      var lnUnit = document.createElement('select'); lnUnit.className = 'filter-date-unit';
+      lnUnit.setAttribute('aria-label', def.label + ' last N unit');
+      [['day', 'days'], ['week', 'weeks'], ['month', 'months']].forEach(function(u) {
+        var o = document.createElement('option'); o.value = u[0]; o.textContent = u[1]; lnUnit.appendChild(o);
+      });
+      var lnApply = document.createElement('button');
+      lnApply.type = 'button'; lnApply.className = 'filter-date-apply'; lnApply.textContent = 'Apply';
+      lnApply.onclick = function() {
+        var n = parseInt(lnNum.value, 10);
+        if (!n || n < 1) return;
+        var unit = lnUnit.value;
+        var r = computeRelativeRange(n, unit);
+        applyDateRange(def, r.start, r.end, 'Last ' + n + ' ' + unit + (n > 1 ? 's' : ''));
+        syncInputs();
+      };
+      lastNWrap.appendChild(lnLabel);
+      lastNWrap.appendChild(lnNum);
+      lastNWrap.appendChild(lnUnit);
+      lastNWrap.appendChild(lnApply);
+      pop.appendChild(lastNWrap);
+
+      // --- Custom From/To range ---
+      var rangeWrap = document.createElement('div');
+      rangeWrap.className = 'filter-date-range';
+      var fromField = document.createElement('label'); fromField.className = 'filter-date-field';
+      var fromSpan = document.createElement('span'); fromSpan.textContent = 'From';
+      fromField.appendChild(fromSpan); fromField.appendChild(from);
+      var toField = document.createElement('label'); toField.className = 'filter-date-field';
+      var toSpan = document.createElement('span'); toSpan.textContent = 'To';
+      toField.appendChild(toSpan); toField.appendChild(to);
+      rangeWrap.appendChild(fromField);
+      rangeWrap.appendChild(toField);
+      pop.appendChild(rangeWrap);
+
+      from.onchange = function() { applyDateRange(def, from.value, _filterState[id].end, null); updateDateLabel(btn, def); };
+      to.onchange = function() { applyDateRange(def, _filterState[id].start, to.value, null); updateDateLabel(btn, def); };
+
+      // --- Full range (min/max from config), if provided ---
+      if (def.min || def.max) {
+        var full = document.createElement('button');
+        full.type = 'button'; full.className = 'filter-date-full'; full.textContent = 'Full range (min–max)';
+        full.onclick = function() { applyDateRange(def, def.min || '', def.max || '', 'Full range'); syncInputs(); };
+        pop.appendChild(full);
+      }
+
+      // --- Clear ---
+      var clear = document.createElement('button');
+      clear.type = 'button'; clear.className = 'filter-ms-clear';
+      clear.textContent = def.allLabel || 'All dates';
+      clear.onclick = function() { applyDateRange(def, '', '', null); syncInputs(); };
+      pop.appendChild(clear);
+
+      ms.appendChild(pop);
+      group.appendChild(ms);
+      syncInputs();
+      return group;
+    }
+
+    // Compute an ISO (YYYY-MM-DD) start/end range for the last N days/weeks/months.
+    function computeRelativeRange(n, unit) {
+      var end = new Date();
+      var start = new Date();
+      if (unit === 'week') start.setDate(start.getDate() - n * 7);
+      else if (unit === 'month') start.setMonth(start.getMonth() - n);
+      else start.setDate(start.getDate() - n);
+      return { start: toISODate(start), end: toISODate(end) };
+    }
+
+    function toISODate(d) {
+      var m = String(d.getMonth() + 1).padStart(2, '0');
+      var day = String(d.getDate()).padStart(2, '0');
+      return d.getFullYear() + '-' + m + '-' + day;
+    }
+
+    // Update selection state for a date filter and re-apply to the dashboard.
+    // label (optional) is a friendly button caption (e.g. a preset name).
+    function applyDateRange(def, start, end, label) {
+      var st = _filterState[def.__id];
+      st.start = start || '';
+      st.end = end || '';
+      st.label = label || '';
+      reconcileCurrentSheet();
+    }
+
+    function updateDateLabel(btn, def) {
+      var st = _filterState[def.__id];
+      if (st.label) btn.textContent = st.label;
+      else if (st.start && st.end) btn.textContent = fmtShortDate(st.start) + ' – ' + fmtShortDate(st.end);
+      else if (st.start) btn.textContent = 'From ' + fmtShortDate(st.start);
+      else if (st.end) btn.textContent = 'Until ' + fmtShortDate(st.end);
+      else btn.textContent = def.allLabel || 'All dates';
+    }
+
+    function fmtShortDate(iso) {
+      var parts = String(iso).split('-');
+      if (parts.length !== 3) return iso;
+      var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      return months[parseInt(parts[1], 10) - 1] + ' ' + parseInt(parts[2], 10) + ', ' + parts[0];
+    }
+
+    // =========================================================================
+    // SDK FILTER-GROUP RECONCILIATION (scoped to the currently selected sheet)
+    // =========================================================================
+    function filterActive(def) {
+      var st = _filterState[def.__id];
+      if ((def.type || 'multiselect') === 'daterange') return !!(st.start || st.end);
+      return st.values.length > 0;
+    }
+
+    function scopeForSheet(sheetId) {
+      return { SelectedSheets: { SheetVisualScopingConfigurations: [ { SheetId: sheetId, Scope: 'ALL_VISUALS' } ] } };
+    }
+
+    // Build a QuickSight FilterGroup (CategoryFilter or TimeRangeFilter) scoped
+    // to the given sheet, from the current selection state.
+    function buildFilterGroup(def, sheetId) {
+      var id = def.__id;
+      var dataset = def.dataSetIdentifier || _datasetDefault;
+      var fgId = 'appfilter-' + id;
+      var filterId = 'appflt-' + id;
+      var st = _filterState[id];
+
+      if ((def.type || 'multiselect') === 'daterange') {
+        var trf = {
+          FilterId: filterId,
+          Column: { DataSetIdentifier: dataset, ColumnName: def.column },
+          NullOption: 'NON_NULLS_ONLY',
+          IncludeMinimum: true,
+          IncludeMaximum: true,
+          TimeGranularity: 'DAY'
+        };
+        if (st.start) trf.RangeMinimumValue = { StaticValue: st.start + 'T00:00:00.000Z' };
+        if (st.end)   trf.RangeMaximumValue = { StaticValue: st.end + 'T23:59:59.999Z' };
+        return {
+          FilterGroupId: fgId,
+          Filters: [{ TimeRangeFilter: trf }],
+          ScopeConfiguration: scopeForSheet(sheetId),
+          Status: 'ENABLED',
+          CrossDataset: 'SINGLE_DATASET'
+        };
+      }
+
+      return {
+        FilterGroupId: fgId,
+        Filters: [{
+          CategoryFilter: {
+            FilterId: filterId,
+            Column: { DataSetIdentifier: dataset, ColumnName: def.column },
+            Configuration: {
+              FilterListConfiguration: {
+                MatchOperator: 'CONTAINS',
+                CategoryValues: st.values.slice(),
+                NullOption: 'NON_NULLS_ONLY'
+              }
+            }
+          }
+        }],
+        ScopeConfiguration: scopeForSheet(sheetId),
+        Status: 'ENABLED',
+        CrossDataset: 'SINGLE_DATASET'
+      };
+    }
+
+    // Reconcile the current sheet's app filter groups to match selection state.
+    // Only filters enabled for the current sheet are applied; others are removed.
+    var _reconciling = false, _reconcilePending = false;
+    function reconcileCurrentSheet() {
+      var widget = window.__quicksuiteWidget;
+      if (!widget) return;
+      var frame = widget.getDashboardFrame();
+      if (!frame || typeof frame.getFilterGroupsForSheet !== 'function') return;
+      if (_reconciling) { _reconcilePending = true; return; }  // coalesce rapid changes
+      _reconciling = true;
+
+      var sheetId = _currentSheetId;
+      var enabled = {};
+      enabledFiltersFor(_currentSubItem).forEach(function(d) { enabled[d.__id] = true; });
+
+      frame.getFilterGroupsForSheet(sheetId).then(function(existing) {
+        var existingIds = {};
+        (existing || []).forEach(function(g) { existingIds[g.FilterGroupId] = true; });
+
+        var toAdd = [], toUpdate = [], toRemove = [];
+        (_config.filters || []).forEach(function(def) {
+          var fgId = 'appfilter-' + def.__id;
+          var want = enabled[def.__id] && filterActive(def);
+          if (want) {
+            var fg = buildFilterGroup(def, sheetId);
+            if (existingIds[fgId]) toUpdate.push(fg); else toAdd.push(fg);
+          } else if (existingIds[fgId]) {
+            toRemove.push(fgId);
+          }
+        });
+
+        var chain = Promise.resolve();
+        if (toAdd.length)    chain = chain.then(function() { return frame.addFilterGroups(toAdd); });
+        if (toUpdate.length) chain = chain.then(function() { return frame.updateFilterGroups(toUpdate); });
+        if (toRemove.length) chain = chain.then(function() { return frame.removeFilterGroups(toRemove); });
+        return chain;
+      }).then(function() {
+        _reconciling = false;
+        if (_reconcilePending) { _reconcilePending = false; reconcileCurrentSheet(); }
+      }).catch(function(err) {
+        _reconciling = false;
+        console.warn('[Filter] reconcile failed:', err && err.message);
+        if (_reconcilePending) { _reconcilePending = false; reconcileCurrentSheet(); }
+      });
+    }
+
+    // Poll for the embedded dashboard frame, then run cb (up to ~20s).
+    function whenFrameReady(cb, waited) {
+      waited = waited || 0;
+      var widget = window.__quicksuiteWidget;
+      var frame = widget && widget.getDashboardFrame && widget.getDashboardFrame();
+      if (frame) { cb(frame); return; }
+      if (waited >= 20000) { console.warn('[Host] Dashboard frame not ready after 20s'); return; }
+      setTimeout(function() { whenFrameReady(cb, waited + 500); }, 500);
+    }
+
+    // =========================================================================
+    // INTERACTIONS
+    // =========================================================================
+
+    // Chat embedding is lazy: it consumes a QuickSight chat session, so only
+    // embed once the panel is actually shown (immediately on desktop, where the
+    // panel starts open; on first toggle on mobile, where it starts closed).
+    var _chatEmbedded = false;
+    function ensureChatEmbedded() {
+      if (_chatEmbedded) return;
+      var widget = window.__quicksuiteWidget;
+      var chatContainer = document.getElementById('quickchat-container');
+      if (widget && chatContainer) {
+        _chatEmbedded = true;
+        widget.embedChatInto(chatContainer);
+      }
+    }
+
+    function toggleChat() {
+      var panel = document.getElementById('chat-panel');
+      var btn = document.getElementById('btn-toggle-chat');
+      var isCollapsed = panel.classList.toggle('collapsed');
+      btn.classList.toggle('active', !isCollapsed);
+      btn.setAttribute('aria-expanded', String(!isCollapsed));
+      if (!isCollapsed) ensureChatEmbedded();
+    }
+
+    // Navigate to a sheet: update nav state, re-render the filter bar for the
+    // target sheet, switch the sheet, then re-apply preserved filters (scoped
+    // to the newly selected sheet).
+    function switchSheet(item, el) {
+      document.querySelectorAll('.nav-item').forEach(function(n) {
+        n.classList.remove('active');
+        n.removeAttribute('aria-current');
+      });
+      el.classList.add('active');
+      el.setAttribute('aria-current', 'page');
+
+      _currentSubItem = item;
+      _currentSheetId = resolveSheetId(item);
+
+      // Show only the filters enabled for this sheet, restoring preserved selections
+      renderFilterBar(item);
+
+      var widget = window.__quicksuiteWidget;
+      if (!widget) { console.warn('[Nav] Widget not initialized'); return; }
+      var frame = widget.getDashboardFrame();
+      if (!frame) {
+        console.warn('[Nav] Dashboard frame not ready — retrying in 1s');
+        setTimeout(function() { switchSheet(item, el); }, 1000);
+        return;
+      }
+
+      console.log('[Nav] Switching to sheet:', _currentSheetId);
+      if (typeof frame.setSelectedSheetId === 'function') {
+        frame.setSelectedSheetId(_currentSheetId).then(function() {
+          // Runtime filter groups are per-selected-sheet, so re-apply here.
+          reconcileCurrentSheet();
+          // Re-fit the embed height to the new sheet's content.
+          nudgeDashboardHeight();
+        }).catch(function(err) {
+          console.warn('[Nav] setSelectedSheetId error:', err && err.message);
+        });
+      }
+    }
+
+    // Force the QuickSight iframe to re-measure its height after an in-place
+    // sheet change. resizeHeightOnSizeChangedEvent only re-fits when the
+    // embedded app emits SIZE_CHANGED, which is unreliable on sheet change; a
+    // brief width toggle triggers the iframe's ResizeObserver so QuickSight
+    // recomputes and re-emits. Repeated a few times because the new sheet's
+    // final height isn't known until it finishes rendering.
+    function nudgeDashboardHeight() {
+      var toggle = function() {
+        var frame = document.querySelector('#quicksuite-widget-container iframe');
+        if (!frame) return;
+        var origW = frame.style.width || '100%';
+        frame.style.width = '99.9%';
+        requestAnimationFrame(function() { frame.style.width = origW; });
+      };
+      toggle();
+      setTimeout(toggle, 350);
+      setTimeout(toggle, 900);
+      setTimeout(toggle, 1600);
+    }
+
+    // Initialize chat after widget loads — only when the panel starts open
+    // (desktop). On mobile the panel starts collapsed and embeds on first open.
+    document.addEventListener('DOMContentLoaded', function() {
+      setTimeout(function() {
+        var panel = document.getElementById('chat-panel');
+        if (panel && !panel.classList.contains('collapsed')) ensureChatEmbedded();
+      }, 2500);
+    });
+
+    // Carry the current deep-link query string over to the other layout so the
+    // active tab/item/chat prompt is preserved when switching.
+    (function () {
+      var s = document.getElementById('switch-layout');
+      if (s) s.href = 'index-topnav.html' + window.location.search;
+    })();
+  </script>
+</body>
+</html>

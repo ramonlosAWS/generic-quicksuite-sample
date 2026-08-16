@@ -1,0 +1,278 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "QuickSuite Widget Configuration",
+  "description": "Configuration schema for the generic QuickSuite embedding widget. Defines navigation structure, branding, session management, filters, and feature flags.",
+  "type": "object",
+  "required": ["apiEndpoint", "navigation"],
+  "properties": {
+    "apiEndpoint": {
+      "type": "string",
+      "format": "uri",
+      "description": "Backend API Gateway endpoint URL for embed URL generation"
+    },
+    "navigation": {
+      "type": "object",
+      "description": "Navigation tabs defining the widget UI structure. Each property key is the tab identifier.",
+      "minProperties": 1,
+      "maxProperties": 10,
+      "additionalProperties": {
+        "type": "object",
+        "required": ["label"],
+        "properties": {
+          "label": {
+            "type": "string",
+            "maxLength": 40,
+            "description": "Display label for the navigation tab"
+          },
+          "icon": {
+            "type": "string",
+            "description": "Icon identifier (emoji or icon name) for the navigation tab"
+          },
+          "hidden": {
+            "type": "boolean",
+            "default": false,
+            "description": "When true, the tab is not rendered in the navigation bar"
+          },
+          "type": {
+            "type": "string",
+            "enum": ["dashboard", "chat"],
+            "description": "Tab type: dashboard for embedded analytics, chat for generative Q&A"
+          },
+          "mobileShowSubNav": {
+            "type": "boolean",
+            "default": true,
+            "description": "When false, hides the secondary sub-navigation bar on mobile viewports"
+          },
+          "subItems": {
+            "type": "array",
+            "description": "Secondary navigation entries within this tab, each mapping to a specific dashboard sheet",
+            "items": {
+              "type": "object",
+              "required": ["id", "label", "dashboardId", "sheetId"],
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "description": "Unique identifier for this sub-item"
+                },
+                "label": {
+                  "type": "string",
+                  "maxLength": 40,
+                  "description": "Display label for the sub-item"
+                },
+                "icon": {
+                  "type": "string",
+                  "description": "Icon (emoji or name) displayed in the sidebar for this sub-item"
+                },
+                "dashboardId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "description": "QuickSight dashboard ID (UUID format)"
+                },
+                "sheetId": {
+                  "type": "string",
+                  "description": "QuickSight sheet ID within the dashboard"
+                },
+                "mobileDashboardId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "description": "Optional mobile-specific dashboard ID (UUID format)"
+                },
+                "mobileSheetId": {
+                  "type": "string",
+                  "description": "Optional mobile-specific sheet ID"
+                },
+                "filters": {
+                  "type": "array",
+                  "items": { "type": "string" },
+                  "description": "IDs of the app filters enabled on this sheet (references filters[].id). Omit to enable all filters. Selections are preserved across sheets that share a filter."
+                }
+              },
+              "additionalProperties": false
+            }
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "session": {
+      "type": "object",
+      "description": "Session management settings for embed URL caching and expiration",
+      "properties": {
+        "expirationMinutes": {
+          "type": "number",
+          "minimum": 1,
+          "maximum": 120,
+          "default": 30,
+          "description": "Duration in minutes before a cached embed URL expires and must be refreshed"
+        }
+      },
+      "additionalProperties": false
+    },
+    "branding": {
+      "type": "object",
+      "description": "Visual branding configuration for the host page and widget UI",
+      "properties": {
+        "appName": {
+          "type": "string",
+          "maxLength": 60,
+          "description": "Application name displayed in the top bar (e.g., 'Artisan Furnishings')"
+        },
+        "appIcon": {
+          "type": "string",
+          "maxLength": 4,
+          "description": "Emoji or short text displayed as the app logo (e.g., '🪑')"
+        },
+        "tagline": {
+          "type": "string",
+          "maxLength": 120,
+          "description": "Subtitle shown below/beside the app name in the top bar"
+        },
+        "primaryColor": {
+          "type": "string",
+          "pattern": "^#[0-9A-Fa-f]{6}$",
+          "description": "Primary color (6-digit hex) used for sidebar, navigation backgrounds"
+        },
+        "secondaryColor": {
+          "type": "string",
+          "pattern": "^#[0-9A-Fa-f]{6}$",
+          "description": "Secondary color (6-digit hex) used for accents, active states"
+        },
+        "logoUrl": {
+          "type": "string",
+          "format": "uri",
+          "maxLength": 2048,
+          "description": "URL to a logo image displayed in the top bar (max height 32px)"
+        }
+      },
+      "additionalProperties": false
+    },
+    "datasetIdentifier": {
+      "type": "string",
+      "description": "Default QuickSight dataset identifier used by app-level filters (the DataSetIdentifier the dashboard references). Individual filters may override this via their own 'dataSetIdentifier'."
+    },
+    "filters": {
+      "type": "array",
+      "description": "App-level filter controls rendered above the dashboard. Each filter applies a QuickSight SDK filter group (addFilterGroups/updateFilterGroups/removeFilterGroups) to a real dataset column — no dashboard parameter is required.",
+      "items": {
+        "type": "object",
+        "required": ["label", "column"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Unique filter identifier, referenced by a sub-item's 'filters' array to enable it on that sheet"
+          },
+          "label": {
+            "type": "string",
+            "maxLength": 30,
+            "description": "Display label for the filter control"
+          },
+          "column": {
+            "type": "string",
+            "description": "Dataset column name to filter on via the SDK filter-group API"
+          },
+          "type": {
+            "type": "string",
+            "enum": ["multiselect", "single", "daterange"],
+            "default": "multiselect",
+            "description": "Control type: multiselect (checkbox category filter), single (single-value category filter), or daterange (start/end date TimeRangeFilter)"
+          },
+          "dataSetIdentifier": {
+            "type": "string",
+            "description": "Optional per-filter dataset identifier override (defaults to the top-level 'datasetIdentifier')"
+          },
+          "parameterName": {
+            "type": "string",
+            "description": "Deprecated. Legacy QuickSight dashboard parameter name (parameter-based filtering). Prefer 'column' with the SDK filter-group approach."
+          },
+          "allLabel": {
+            "type": "string",
+            "default": "All",
+            "description": "Label for the 'show all' option (category filters only)"
+          },
+          "min": {
+            "type": "string",
+            "description": "Optional minimum ISO date (YYYY-MM-DD) for daterange filters; bounds the date inputs and the 'Full range' shortcut"
+          },
+          "max": {
+            "type": "string",
+            "description": "Optional maximum ISO date (YYYY-MM-DD) for daterange filters; bounds the date inputs and the 'Full range' shortcut"
+          },
+          "presets": {
+            "type": "array",
+            "description": "Optional relative presets for daterange filters (defaults to Last 7/30 days and Last 3/12 months)",
+            "items": {
+              "type": "object",
+              "required": ["label", "n", "unit"],
+              "properties": {
+                "label": { "type": "string", "description": "Preset button label" },
+                "n": { "type": "number", "minimum": 1, "description": "Number of units back from today" },
+                "unit": { "type": "string", "enum": ["day", "week", "month"], "description": "Unit for the relative range" }
+              },
+              "additionalProperties": false
+            }
+          },
+          "options": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "List of filter option values (category filters only; omit for daterange)"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "chat": {
+      "type": "object",
+      "description": "Configuration for the QuickChat agent panel",
+      "properties": {
+        "agentId": {
+          "type": "string",
+          "description": "QuickSight Agent ID for the embedQuickChat fixedAgentId option"
+        },
+        "panelTitle": {
+          "type": "string",
+          "default": "AI Assistant",
+          "description": "Title displayed in the chat panel header"
+        },
+        "toggleLabel": {
+          "type": "string",
+          "default": "AI Assistant",
+          "description": "Label on the top-bar chat toggle button"
+        }
+      },
+      "additionalProperties": false
+    },
+    "auth": {
+      "type": "object",
+      "description": "Optional Cognito authentication. When present, viewers must log in via the Cognito Hosted UI.",
+      "required": ["userPoolDomain", "clientId"],
+      "properties": {
+        "userPoolDomain": { "type": "string" },
+        "clientId": { "type": "string" },
+        "region": { "type": "string" },
+        "scopes": { "type": "array", "items": { "type": "string" } },
+        "redirectUri": { "type": "string" },
+        "logoutUri": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "chatEnabled": {
+      "type": "boolean",
+      "default": false,
+      "description": "When true, the chat tab and chat panel are active"
+    },
+    "chatUserPoolSize": {
+      "type": "integer",
+      "minimum": 2,
+      "description": "Number of pre-provisioned QuickSight reader users for chat rotation"
+    },
+    "containerId": {
+      "type": "string",
+      "default": "quicksuite-widget-container",
+      "description": "HTML element ID of the container div where the widget renders"
+    },
+    "errorMessage": { "type": "string" },
+    "fallbackMode": { "type": "boolean", "default": true },
+    "loadingScreen": { "type": "boolean", "default": true }
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<!--
+  Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+  SPDX-License-Identifier: Apache-2.0
+
+  QuickSuite Sample — Top-Navigation Layout (Registered User Variant)
+
+  The widget-driven template: the widget renders EVERYTHING inside the container
+  from config.json — a horizontal top-nav tab bar (plus a secondary sub-nav for a
+  tab's sub-items), an app-level filter bar beneath the navigation, the embedded
+  dashboard, and a chat panel that opens automatically beside the dashboard on
+  desktop. The host page only supplies a slim brand bar; it does NOT hide the
+  widget nav and does NOT set data-no-chat-bubble.
+
+  Contrast with index.html (the split-pane layout), where the HOST page drives
+  navigation from a left sidebar, renders the filter bar, and docks chat in a
+  right panel (hiding the widget's built-in nav). Both templates read the SAME
+  config.json.
+
+  Registered-user variant: viewers sign in through the Cognito Hosted UI
+  (handled inside the widget) and dashboards + chat embed as the authenticated
+  user. See the auth block in config.json.
+
+  See docs/templates.md for a full comparison and setup options.
+-->
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Analytics Portal</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      /* Initial branding — overridden at runtime from config.json. */
+      --topbar-height: 56px;
+      --color-primary: #5D4037;
+      --color-secondary: #8D6E63;
+      --cream-dark: #D7CCC8;
+      --text-primary: #3E2723;
+      --text-secondary: #6D4C41;
+      --white: #ffffff;
+      --shadow-sm: 0 1px 3px rgba(0,0,0,0.08);
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, sans-serif;
+      background: #f4f4f4;
+      color: var(--text-primary);
+      min-height: 100vh;
+      opacity: 0;
+      transition: opacity 0.25s ease-in;
+    }
+    body.ready { opacity: 1; }
+
+    /* Slim host brand bar. The widget's own top-nav renders directly beneath. */
+    .topbar {
+      height: var(--topbar-height);
+      background: var(--white);
+      border-bottom: 1px solid var(--cream-dark);
+      box-shadow: var(--shadow-sm);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 20px;
+      position: sticky; top: 0; z-index: 100;
+    }
+    .topbar-left { display: flex; align-items: center; gap: 12px; }
+    .topbar-right { display: flex; align-items: center; gap: 12px; }
+    .topbar-logo { font-size: 24px; line-height: 1; }
+    .topbar-brand { font-size: 16px; font-weight: 600; color: var(--text-primary); letter-spacing: -0.3px; }
+    .topbar-tagline { font-size: 11px; color: var(--text-secondary); margin-left: 12px; }
+
+    .btn-switch-layout {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 8px 12px; border: 1px solid var(--cream-dark); border-radius: 8px;
+      background: var(--white); color: var(--text-secondary);
+      font-size: 13px; font-weight: 500; text-decoration: none; cursor: pointer;
+      transition: background 0.2s, border-color 0.2s; white-space: nowrap;
+    }
+    .btn-switch-layout:hover { background: #f4f0ed; border-color: var(--color-secondary); }
+    .btn-switch-layout svg { width: 15px; height: 15px; }
+
+    /* Full-width content area. The widget renders its top-nav tab bar, the
+       secondary sub-nav, the app filter bar, the dashboard, and an auto-opening
+       chat panel here. Full-bleed (no max-width cap) so the dashboard is wide. */
+    .widget-wrapper {
+      max-width: none;
+      margin: 0 auto;
+      padding: 16px;
+    }
+    #quicksuite-widget-container {
+      background: var(--white);
+      border: 1px solid var(--cream-dark);
+      border-radius: 12px;
+      /* Auto-height: let the container grow to fit the embedded dashboard (the
+         widget resizes the iframe via the SDK + a re-measure on sheet change).
+         overflow:visible so a taller sheet is never clipped; the page scrolls. */
+      overflow: visible;
+      width: 100%;
+      min-height: calc(100vh - var(--topbar-height) - 32px);
+    }
+
+    @media (max-width: 768px) {
+      .widget-wrapper { padding: 0; }
+      #quicksuite-widget-container { border-radius: 0; border-left: none; border-right: none; }
+      .topbar { padding: 0 12px; }
+      .topbar-tagline { display: none; }
+      .btn-switch-layout span { display: none; }
+      .btn-switch-layout { padding: 8px; }
+    }
+  </style>
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="topbar-left">
+      <span class="topbar-logo" id="app-icon">🪑</span>
+      <span class="topbar-brand" id="app-name">Artisan Furnishings</span>
+      <span class="topbar-tagline" id="app-tagline">Operations Portal</span>
+    </div>
+    <div class="topbar-right">
+      <a class="btn-switch-layout" id="switch-layout" href="index.html" title="Switch to the split-pane (left sidebar) layout">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="1"/><path d="M9 3v18"/><path d="M15 9h6"/></svg>
+        <span>Split-pane layout</span>
+      </a>
+    </div>
+  </header>
+
+  <div class="widget-wrapper">
+    <!-- No data-no-chat-bubble and the widget nav is NOT hidden, so the widget
+         renders its own top-nav + sub-nav + filter bar and auto-opens the chat
+         panel (widget-driven layout). -->
+    <div id="quicksuite-widget-container" data-initial-tab="overview"></div>
+  </div>
+
+  <!-- SDK from CDN + raw widget source for local testing. For production,
+       host the single self-contained bundle instead (quicksuite-widget-bundled.js). -->
+  <script src="https://unpkg.com/amazon-quicksight-embedding-sdk@2.11.3/dist/quicksight-embedding-js-sdk.min.js"></script>
+  <script src="./quicksuite-widget.js"></script>
+
+  <script>
+    // =========================================================================
+    // CONFIG-DRIVEN BRAND BAR
+    //
+    // The widget itself loads config.json, renders its top navigation, the app
+    // filter bar, the dashboard, and the chat panel. The only thing this host
+    // page does is populate the slim brand bar from the same config, so no HTML
+    // edits are needed to re-skin for a new deployment.
+    // =========================================================================
+    (function () {
+      fetch('./config.json')
+        .then(function (r) { return r.json(); })
+        .then(function (config) {
+          var branding = config.branding || {};
+          var root = document.documentElement;
+          if (branding.primaryColor) root.style.setProperty('--color-primary', branding.primaryColor);
+          if (branding.secondaryColor) root.style.setProperty('--color-secondary', branding.secondaryColor);
+
+          document.getElementById('app-icon').textContent = branding.appIcon || '📊';
+          document.getElementById('app-name').textContent = branding.appName || 'Analytics Portal';
+          document.getElementById('app-tagline').textContent = branding.tagline || '';
+          document.title = (branding.appName || 'Analytics Portal') +
+            (branding.tagline ? ' — ' + branding.tagline : '');
+        })
+        .catch(function (err) {
+          console.error('[Host] Failed to load config.json:', err);
+        })
+        .finally(function () {
+          document.body.classList.add('ready');
+        });
+    })();
+
+    // Carry the current deep-link query string over to the other layout so the
+    // active tab/item/chat prompt is preserved when switching.
+    (function () {
+      var s = document.getElementById('switch-layout');
+      if (s) s.href = 'index.html' + window.location.search;
+    })();
+  </script>
+</body>
+</html>

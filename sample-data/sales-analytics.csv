@@ -1,0 +1,246 @@
+region,product,channel,order_date,revenue,quantity
+North America,Alpha Widget,Partner,2025-01-15,13651.00,187
+North America,Beta Gadget,Online,2025-01-15,560.00,35
+North America,Gamma Tool,Retail,2025-01-27,10437.00,147
+North America,Delta Device,Partner,2025-01-03,15824.00,184
+North America,Epsilon Kit,Partner,2025-01-08,2768.00,173
+Europe,Alpha Widget,Online,2025-01-04,4968.00,72
+Europe,Beta Gadget,Retail,2025-01-14,5530.00,158
+Europe,Gamma Tool,Partner,2025-01-16,8004.00,116
+Europe,Epsilon Kit,Partner,2025-01-07,8428.00,172
+Europe,Zeta Module,Retail,2025-01-23,806.00,62
+Asia Pacific,Alpha Widget,Online,2025-01-05,6336.00,192
+Asia Pacific,Beta Gadget,Retail,2025-01-20,10043.00,121
+Asia Pacific,Gamma Tool,Partner,2025-01-03,1102.00,58
+Asia Pacific,Epsilon Kit,Online,2025-01-22,2401.00,49
+Asia Pacific,Zeta Module,Partner,2025-01-04,4484.00,76
+Latin America,Alpha Widget,Retail,2025-01-11,5025.00,75
+Latin America,Beta Gadget,Online,2025-01-21,7735.00,91
+Latin America,Gamma Tool,Retail,2025-01-15,10519.00,157
+Latin America,Delta Device,Retail,2025-01-07,280.00,7
+Latin America,Epsilon Kit,Online,2025-01-27,10816.00,169
+North America,Alpha Widget,Partner,2025-02-17,580.00,29
+North America,Beta Gadget,Partner,2025-02-13,10948.00,161
+North America,Gamma Tool,Partner,2025-02-04,1632.00,96
+North America,Delta Device,Online,2025-02-20,1802.00,106
+North America,Epsilon Kit,Partner,2025-02-13,2730.00,195
+Europe,Alpha Widget,Retail,2025-02-17,5668.00,109
+Europe,Beta Gadget,Partner,2025-02-06,943.00,23
+Europe,Gamma Tool,Partner,2025-02-07,5365.00,145
+Europe,Epsilon Kit,Retail,2025-02-02,9006.00,114
+Europe,Zeta Module,Online,2025-02-21,4992.00,192
+Asia Pacific,Alpha Widget,Partner,2025-02-05,3135.00,95
+Asia Pacific,Beta Gadget,Online,2025-02-02,1848.00,44
+Asia Pacific,Gamma Tool,Partner,2025-02-01,3222.00,179
+Asia Pacific,Delta Device,Retail,2025-02-22,3060.00,68
+Asia Pacific,Epsilon Kit,Retail,2025-02-19,10579.00,149
+Asia Pacific,Zeta Module,Retail,2025-02-17,14996.00,163
+Latin America,Alpha Widget,Retail,2025-02-02,11163.00,183
+Latin America,Gamma Tool,Retail,2025-02-23,2848.00,178
+Latin America,Delta Device,Retail,2025-02-01,7029.00,99
+Latin America,Epsilon Kit,Partner,2025-02-19,1918.00,137
+Latin America,Zeta Module,Online,2025-02-09,962.00,37
+North America,Alpha Widget,Partner,2025-03-20,520.00,20
+North America,Beta Gadget,Partner,2025-03-05,120.00,5
+North America,Gamma Tool,Retail,2025-03-10,5832.00,81
+North America,Delta Device,Online,2025-03-23,6624.00,138
+North America,Epsilon Kit,Online,2025-03-01,4275.00,75
+North America,Zeta Module,Online,2025-03-19,1640.00,82
+Europe,Alpha Widget,Partner,2025-03-20,2516.00,37
+Europe,Beta Gadget,Online,2025-03-24,2117.00,29
+Europe,Delta Device,Partner,2025-03-21,4095.00,65
+Europe,Zeta Module,Retail,2025-03-02,4218.00,111
+Asia Pacific,Alpha Widget,Retail,2025-03-17,1400.00,40
+Asia Pacific,Beta Gadget,Online,2025-03-07,5044.00,97
+Asia Pacific,Gamma Tool,Partner,2025-03-20,2704.00,169
+Asia Pacific,Epsilon Kit,Partner,2025-03-18,1660.00,83
+Asia Pacific,Zeta Module,Retail,2025-03-27,3850.00,55
+Latin America,Beta Gadget,Partner,2025-03-17,1156.00,17
+Latin America,Gamma Tool,Partner,2025-03-05,2620.00,131
+Latin America,Delta Device,Retail,2025-03-18,7881.00,111
+Latin America,Epsilon Kit,Retail,2025-03-06,8253.00,131
+Latin America,Zeta Module,Online,2025-03-20,17952.00,187
+North America,Beta Gadget,Retail,2025-04-27,2697.00,31
+North America,Gamma Tool,Partner,2025-04-01,3835.00,65
+North America,Delta Device,Online,2025-04-10,3168.00,66
+North America,Epsilon Kit,Partner,2025-04-12,4256.00,56
+Europe,Alpha Widget,Partner,2025-04-09,1980.00,60
+Europe,Beta Gadget,Retail,2025-04-07,6732.00,198
+Europe,Delta Device,Online,2025-04-10,11685.00,123
+Europe,Epsilon Kit,Online,2025-04-04,9796.00,158
+Europe,Zeta Module,Partner,2025-04-04,3444.00,41
+Asia Pacific,Alpha Widget,Retail,2025-04-27,4896.00,72
+Asia Pacific,Beta Gadget,Partner,2025-04-10,2185.00,95
+Asia Pacific,Gamma Tool,Online,2025-04-02,4800.00,120
+Asia Pacific,Delta Device,Partner,2025-04-10,10140.00,130
+Asia Pacific,Epsilon Kit,Partner,2025-04-25,11000.00,200
+Asia Pacific,Zeta Module,Retail,2025-04-02,2680.00,67
+Latin America,Alpha Widget,Partner,2025-04-21,8613.00,99
+Latin America,Beta Gadget,Partner,2025-04-24,287.00,7
+Latin America,Gamma Tool,Retail,2025-04-08,9646.00,182
+Latin America,Delta Device,Retail,2025-04-01,10050.00,134
+Latin America,Epsilon Kit,Retail,2025-04-21,3916.00,178
+Latin America,Zeta Module,Partner,2025-04-24,1216.00,64
+North America,Beta Gadget,Online,2025-05-19,1012.00,23
+North America,Zeta Module,Online,2025-05-10,2214.00,54
+Europe,Alpha Widget,Online,2025-05-20,9384.00,204
+Europe,Gamma Tool,Retail,2025-05-09,17661.00,203
+Europe,Delta Device,Partner,2025-05-14,1066.00,41
+Europe,Epsilon Kit,Partner,2025-05-12,5828.00,62
+Europe,Zeta Module,Partner,2025-05-17,5278.00,91
+Asia Pacific,Alpha Widget,Retail,2025-05-06,1728.00,96
+Asia Pacific,Beta Gadget,Online,2025-05-05,1806.00,42
+Asia Pacific,Gamma Tool,Online,2025-05-03,3698.00,43
+Asia Pacific,Delta Device,Retail,2025-05-26,7565.00,89
+Asia Pacific,Epsilon Kit,Partner,2025-05-21,5244.00,57
+Asia Pacific,Zeta Module,Partner,2025-05-15,7714.00,133
+Latin America,Alpha Widget,Online,2025-05-23,6084.00,169
+Latin America,Beta Gadget,Online,2025-05-05,17484.00,188
+Latin America,Gamma Tool,Partner,2025-05-01,2813.00,97
+Latin America,Delta Device,Online,2025-05-21,2190.00,146
+Latin America,Epsilon Kit,Partner,2025-05-25,7020.00,156
+North America,Alpha Widget,Partner,2025-06-10,2220.00,185
+North America,Beta Gadget,Retail,2025-06-21,9744.00,168
+North America,Gamma Tool,Partner,2025-06-20,10530.00,135
+North America,Delta Device,Online,2025-06-22,15810.00,186
+North America,Epsilon Kit,Partner,2025-06-10,11820.00,197
+North America,Zeta Module,Retail,2025-06-10,7760.00,194
+Europe,Alpha Widget,Partner,2025-06-06,8400.00,175
+Europe,Beta Gadget,Retail,2025-06-06,3196.00,94
+Europe,Gamma Tool,Online,2025-06-04,2821.00,91
+Europe,Delta Device,Retail,2025-06-17,11303.00,127
+Europe,Zeta Module,Partner,2025-06-05,10920.00,140
+Asia Pacific,Alpha Widget,Partner,2025-06-14,7497.00,119
+Asia Pacific,Beta Gadget,Retail,2025-06-17,7500.00,150
+Asia Pacific,Gamma Tool,Online,2025-06-21,3600.00,100
+Asia Pacific,Delta Device,Online,2025-06-03,1920.00,96
+Asia Pacific,Epsilon Kit,Online,2025-06-25,9215.00,97
+Asia Pacific,Zeta Module,Partner,2025-06-15,2820.00,60
+Latin America,Alpha Widget,Retail,2025-06-14,8695.00,185
+Latin America,Beta Gadget,Online,2025-06-17,8874.00,153
+Latin America,Gamma Tool,Retail,2025-06-27,2409.00,33
+Latin America,Delta Device,Online,2025-06-19,748.00,17
+Latin America,Epsilon Kit,Online,2025-06-15,9516.00,183
+Latin America,Zeta Module,Online,2025-06-01,10854.00,134
+North America,Alpha Widget,Online,2025-07-07,15288.00,168
+North America,Beta Gadget,Online,2025-07-19,3528.00,196
+North America,Gamma Tool,Online,2025-07-01,1072.00,16
+North America,Delta Device,Retail,2025-07-16,1496.00,68
+North America,Zeta Module,Retail,2025-07-13,13940.00,170
+Europe,Alpha Widget,Partner,2025-07-21,2266.00,103
+Europe,Beta Gadget,Retail,2025-07-04,1365.00,21
+Europe,Gamma Tool,Partner,2025-07-23,4260.00,71
+Europe,Zeta Module,Online,2025-07-20,3000.00,60
+Asia Pacific,Alpha Widget,Online,2025-07-14,14430.00,185
+Asia Pacific,Beta Gadget,Online,2025-07-12,9828.00,189
+Asia Pacific,Gamma Tool,Retail,2025-07-06,18139.00,187
+Asia Pacific,Epsilon Kit,Partner,2025-07-24,1680.00,40
+Asia Pacific,Zeta Module,Retail,2025-07-10,2133.00,27
+Latin America,Alpha Widget,Partner,2025-07-20,2496.00,32
+Latin America,Beta Gadget,Retail,2025-07-02,1248.00,26
+Latin America,Gamma Tool,Online,2025-07-21,6348.00,69
+Latin America,Delta Device,Retail,2025-07-02,4815.00,107
+Latin America,Epsilon Kit,Retail,2025-07-13,185.00,5
+Latin America,Zeta Module,Partner,2025-07-09,10146.00,178
+North America,Alpha Widget,Retail,2025-08-04,4950.00,165
+North America,Beta Gadget,Partner,2025-08-01,1045.00,19
+North America,Gamma Tool,Partner,2025-08-03,2160.00,24
+North America,Delta Device,Online,2025-08-11,12012.00,143
+North America,Epsilon Kit,Online,2025-08-23,3132.00,36
+North America,Zeta Module,Partner,2025-08-22,7144.00,188
+Europe,Alpha Widget,Retail,2025-08-11,18228.00,196
+Europe,Beta Gadget,Retail,2025-08-16,5780.00,85
+Europe,Gamma Tool,Online,2025-08-08,2236.00,26
+Europe,Delta Device,Partner,2025-08-07,9483.00,109
+Europe,Epsilon Kit,Partner,2025-08-05,343.00,7
+Europe,Zeta Module,Retail,2025-08-25,840.00,28
+Asia Pacific,Alpha Widget,Online,2025-08-01,8036.00,82
+Asia Pacific,Beta Gadget,Partner,2025-08-03,6882.00,74
+Asia Pacific,Gamma Tool,Retail,2025-08-25,1442.00,103
+Asia Pacific,Delta Device,Partner,2025-08-22,12870.00,198
+Asia Pacific,Zeta Module,Partner,2025-08-22,6460.00,68
+Latin America,Alpha Widget,Retail,2025-08-08,632.00,8
+Latin America,Gamma Tool,Partner,2025-08-12,2090.00,38
+Latin America,Epsilon Kit,Online,2025-08-24,7360.00,115
+North America,Beta Gadget,Partner,2025-09-15,16296.00,194
+North America,Delta Device,Online,2025-09-02,9462.00,166
+North America,Epsilon Kit,Retail,2025-09-24,10212.00,138
+North America,Zeta Module,Online,2025-09-08,12529.00,187
+Europe,Alpha Widget,Online,2025-09-06,494.00,13
+Europe,Beta Gadget,Online,2025-09-11,416.00,32
+Europe,Gamma Tool,Online,2025-09-24,230.00,10
+Europe,Delta Device,Online,2025-09-15,2891.00,59
+Europe,Epsilon Kit,Online,2025-09-27,4488.00,102
+Europe,Zeta Module,Retail,2025-09-06,700.00,35
+Asia Pacific,Alpha Widget,Online,2025-09-26,1820.00,28
+Asia Pacific,Beta Gadget,Online,2025-09-07,2600.00,65
+Asia Pacific,Gamma Tool,Partner,2025-09-18,1911.00,49
+Asia Pacific,Delta Device,Retail,2025-09-04,1392.00,87
+Asia Pacific,Epsilon Kit,Partner,2025-09-23,7752.00,204
+Asia Pacific,Zeta Module,Retail,2025-09-22,3540.00,177
+Latin America,Alpha Widget,Online,2025-09-14,5040.00,168
+Latin America,Beta Gadget,Online,2025-09-25,7254.00,186
+Latin America,Gamma Tool,Partner,2025-09-06,880.00,44
+Latin America,Delta Device,Partner,2025-09-06,6321.00,147
+Latin America,Epsilon Kit,Online,2025-09-26,10738.00,118
+Latin America,Zeta Module,Partner,2025-09-23,3828.00,44
+North America,Alpha Widget,Online,2025-10-10,8932.00,154
+North America,Gamma Tool,Online,2025-10-01,1891.00,31
+North America,Delta Device,Retail,2025-10-12,540.00,15
+North America,Epsilon Kit,Retail,2025-10-13,4305.00,123
+North America,Zeta Module,Online,2025-10-12,5858.00,101
+Europe,Alpha Widget,Online,2025-10-14,13332.00,202
+Europe,Beta Gadget,Partner,2025-10-16,608.00,38
+Europe,Gamma Tool,Partner,2025-10-08,1938.00,114
+Europe,Delta Device,Partner,2025-10-10,12222.00,126
+Europe,Epsilon Kit,Online,2025-10-24,115.00,5
+Europe,Zeta Module,Partner,2025-10-03,1771.00,77
+Asia Pacific,Alpha Widget,Partner,2025-10-20,8512.00,133
+Asia Pacific,Beta Gadget,Online,2025-10-17,3536.00,68
+Asia Pacific,Gamma Tool,Online,2025-10-02,2320.00,80
+Asia Pacific,Delta Device,Retail,2025-10-04,15916.00,173
+Asia Pacific,Zeta Module,Retail,2025-10-12,16170.00,165
+Latin America,Alpha Widget,Online,2025-10-07,3600.00,75
+Latin America,Beta Gadget,Retail,2025-10-05,8911.00,133
+Latin America,Gamma Tool,Retail,2025-10-22,2480.00,31
+Latin America,Delta Device,Retail,2025-10-09,6708.00,86
+Latin America,Epsilon Kit,Partner,2025-10-16,2737.00,161
+Latin America,Zeta Module,Online,2025-10-12,4590.00,51
+North America,Alpha Widget,Retail,2025-11-23,1836.00,34
+North America,Beta Gadget,Partner,2025-11-01,1890.00,45
+North America,Gamma Tool,Partner,2025-11-22,9072.00,162
+North America,Delta Device,Online,2025-11-19,1350.00,90
+North America,Zeta Module,Online,2025-11-22,9720.00,162
+Europe,Alpha Widget,Partner,2025-11-18,928.00,32
+Europe,Beta Gadget,Partner,2025-11-13,3810.00,127
+Europe,Gamma Tool,Online,2025-11-07,6420.00,107
+Europe,Epsilon Kit,Online,2025-11-20,4980.00,60
+Europe,Zeta Module,Partner,2025-11-15,6765.00,165
+Asia Pacific,Alpha Widget,Retail,2025-11-06,2502.00,139
+Asia Pacific,Beta Gadget,Online,2025-11-11,10863.00,153
+Asia Pacific,Gamma Tool,Retail,2025-11-23,5200.00,200
+Asia Pacific,Delta Device,Retail,2025-11-27,12144.00,138
+Asia Pacific,Epsilon Kit,Online,2025-11-02,4416.00,96
+Asia Pacific,Zeta Module,Retail,2025-11-16,1168.00,73
+Latin America,Alpha Widget,Online,2025-11-07,6272.00,196
+Latin America,Beta Gadget,Partner,2025-11-19,3610.00,95
+Latin America,Gamma Tool,Partner,2025-11-26,4602.00,177
+Latin America,Delta Device,Partner,2025-11-07,15041.00,169
+Latin America,Epsilon Kit,Online,2025-11-13,2904.00,44
+North America,Alpha Widget,Partner,2025-12-24,13668.00,201
+North America,Beta Gadget,Partner,2025-12-23,2016.00,72
+North America,Delta Device,Retail,2025-12-01,4785.00,87
+North America,Epsilon Kit,Online,2025-12-20,7614.00,94
+North America,Zeta Module,Online,2025-12-22,13659.00,157
+Europe,Alpha Widget,Online,2025-12-09,374.00,17
+Europe,Beta Gadget,Retail,2025-12-10,1184.00,32
+Europe,Epsilon Kit,Retail,2025-12-21,3294.00,122
+Europe,Zeta Module,Partner,2025-12-18,4340.00,155
+Asia Pacific,Alpha Widget,Online,2025-12-07,876.00,12
+Asia Pacific,Gamma Tool,Online,2025-12-07,1215.00,27
+Asia Pacific,Delta Device,Partner,2025-12-17,12012.00,143
+Asia Pacific,Epsilon Kit,Retail,2025-12-06,320.00,16
+Latin America,Alpha Widget,Online,2025-12-11,3381.00,69
+Latin America,Beta Gadget,Online,2025-12-02,8694.00,126
+Latin America,Epsilon Kit,Online,2025-12-23,4524.00,156
+Latin America,Zeta Module,Retail,2025-12-08,9044.00,133

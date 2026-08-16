@@ -1,0 +1,458 @@
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  Generic QuickSuite Widget Backend - Serverless embedding API for Amazon QuickSight
+  dashboards and generative Q&A chat.
+
+# --- Parameters ---
+Parameters:
+  QuickSightAccountId:
+    Type: String
+    Description: AWS Account ID where QuickSight is provisioned (12 digits)
+    AllowedPattern: '^\d{12}$'
+    ConstraintDescription: Must be a 12-digit AWS account ID
+
+  QuickSightRegion:
+    Type: String
+    Description: AWS Region for QuickSight API calls
+    Default: us-east-1
+    AllowedValues:
+      - us-east-1
+      - us-west-2
+      - eu-west-1
+      - ap-southeast-1
+
+  QuickSightNamespace:
+    Type: String
+    Description: QuickSight namespace
+    Default: default
+
+  DashboardIds:
+    Type: CommaDelimitedList
+    Description: Comma-separated list of allowed QuickSight dashboard IDs (UUID format)
+
+  AllowedOrigins:
+    Type: CommaDelimitedList
+    Description: Comma-separated list of allowed CORS origins (HTTPS URLs)
+
+  DashboardEmbedUserArn:
+    Type: String
+    Default: ''
+    Description: >
+      Optional fallback QuickSight registered user ARN. When Cognito auth is
+      used, the embed identity is derived per-request from the authenticated
+      user's token claims and this fallback is ignored. Leave empty for the
+      per-user (Cognito) model.
+
+  CognitoDomainPrefix:
+    Type: String
+    Description: >
+      Globally-unique prefix for the Cognito Hosted UI domain
+      (https://<prefix>.auth.<region>.amazoncognito.com). Lowercase letters,
+      numbers, and hyphens only.
+    AllowedPattern: '^[a-z0-9-]+$'
+
+  CallbackUrls:
+    Type: CommaDelimitedList
+    Description: >
+      Comma-separated OAuth callback URLs the Cognito Hosted UI may redirect
+      back to after login (e.g. http://localhost:8080/index.html).
+
+  LogoutUrls:
+    Type: CommaDelimitedList
+    Description: >
+      Comma-separated URLs the Cognito Hosted UI may redirect to after logout
+      (e.g. http://localhost:8080/index.html).
+
+  ChatUserArns:
+    Type: CommaDelimitedList
+    Description: >
+      Comma-separated list of QuickSight registered user ARNs for chat.
+      Provide a SINGLE ARN (typically the same as DashboardEmbedUserArn) to use
+      one shared, non-rotating embed identity — the standard registered-user
+      setup. Provide 2+ ARNs to enable least-recently-used session rotation,
+      intended for anonymous-app scenarios that need per-session identity
+      isolation.
+
+  ChatEnabled:
+    Type: String
+    Description: Whether to enable the chat embed endpoint
+    Default: 'true'
+    AllowedValues:
+      - 'true'
+      - 'false'
+
+  EmbedIdentityMode:
+    Type: String
+    Default: per-user
+    AllowedValues:
+      - per-user
+      - shared
+    Description: >
+      How the backend chooses the QuickSight embed identity for an
+      authenticated request. "per-user" derives and just-in-time registers a
+      QuickSight reader per authenticated email (classic QuickSight-namespace
+      accounts). "shared" embeds every authenticated viewer as the single
+      pre-existing DashboardEmbedUserArn / first ChatUserArns user — required
+      for accounts managed by IAM Identity Center where RegisterUser is
+      disabled. Login is still enforced in both modes.
+
+  AuditLogTtlDays:
+    Type: Number
+    Description: Number of days to retain audit log records (1-365)
+    Default: 90
+    MinValue: 1
+    MaxValue: 365
+
+  RateLimitPerMinute:
+    Type: Number
+    Description: >
+      Max embed requests per client IP per minute (per endpoint). Enforced in
+      the Lambda via a DynamoDB counter (fail-open). Set 0 to disable.
+    Default: 60
+    MinValue: 0
+    MaxValue: 100000
+
+  ApiThrottleRateLimit:
+    Type: Number
+    Description: API Gateway steady-state requests/second across the stage.
+    Default: 50
+    MinValue: 1
+
+  ApiThrottleBurstLimit:
+    Type: Number
+    Description: API Gateway burst capacity (concurrent request spikes).
+    Default: 100
+    MinValue: 1
+
+# --- Globals ---
+Globals:
+  Function:
+    Runtime: nodejs22.x
+    Timeout: 30
+    MemorySize: 256
+    Architectures:
+      - arm64
+
+# --- Resources ---
+Resources:
+
+  # --- Cognito User Pool (end-user authentication) ---
+  EmbedUserPool:
+    Type: AWS::Cognito::UserPool
+    Properties:
+      UserPoolName: !Sub '${AWS::StackName}-users'
+      UsernameAttributes:
+        - email
+      AutoVerifiedAttributes:
+        - email
+      AdminCreateUserConfig:
+        # Demo default: admins create users. Flip to false to allow self-signup.
+        AllowAdminCreateUserOnly: true
+      Policies:
+        PasswordPolicy:
+          MinimumLength: 8
+          RequireUppercase: true
+          RequireLowercase: true
+          RequireNumbers: true
+          RequireSymbols: false
+
+  EmbedUserPoolClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      ClientName: !Sub '${AWS::StackName}-web-client'
+      UserPoolId: !Ref EmbedUserPool
+      # Public SPA client: no secret. The widget uses the Hosted UI implicit
+      # flow (id_token in the redirect fragment) for a build-tool-free sample.
+      GenerateSecret: false
+      AllowedOAuthFlowsUserPoolClient: true
+      AllowedOAuthFlows:
+        - implicit
+        - code
+      AllowedOAuthScopes:
+        - openid
+        - email
+        - profile
+      CallbackURLs: !Ref CallbackUrls
+      LogoutURLs: !Ref LogoutUrls
+      SupportedIdentityProviders:
+        - COGNITO
+      ExplicitAuthFlows:
+        - ALLOW_USER_SRP_AUTH
+        - ALLOW_USER_PASSWORD_AUTH
+        - ALLOW_REFRESH_TOKEN_AUTH
+
+  EmbedUserPoolDomain:
+    Type: AWS::Cognito::UserPoolDomain
+    Properties:
+      Domain: !Ref CognitoDomainPrefix
+      UserPoolId: !Ref EmbedUserPool
+
+  # --- API Gateway ---
+  EmbedApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      Name: quicksuite-embed-api
+      StageName: prod
+      EndpointConfiguration:
+        Type: REGIONAL
+      # Stage-wide throttling above the per-IP Lambda limit and the Cognito
+      # authorizer — guards against distributed abuse.
+      MethodSettings:
+        - HttpMethod: '*'
+          ResourcePath: '/*'
+          ThrottlingRateLimit: !Ref ApiThrottleRateLimit
+          ThrottlingBurstLimit: !Ref ApiThrottleBurstLimit
+      # CORS: the widget calls this API cross-origin from the host page and
+      # sends an Authorization (bearer id-token) header, which triggers a
+      # preflight. Preflight (OPTIONS) must NOT require authorization.
+      Cors:
+        AllowMethods: "'POST,OPTIONS'"
+        AllowHeaders: "'Content-Type,Authorization'"
+        AllowOrigin: "'*'"
+      Auth:
+        DefaultAuthorizer: CognitoAuthorizer
+        AddDefaultAuthorizerToCorsPreflight: false
+        Authorizers:
+          CognitoAuthorizer:
+            UserPoolArn: !GetAtt EmbedUserPool.Arn
+
+  # --- DynamoDB Audit Log Table ---
+  AuditLogTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub '${AWS::StackName}-audit-logs'
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: requestId
+          AttributeType: S
+        - AttributeName: timestamp
+          AttributeType: N
+      KeySchema:
+        - AttributeName: requestId
+          KeyType: HASH
+        - AttributeName: timestamp
+          KeyType: RANGE
+      TimeToLiveSpecification:
+        Enabled: true
+        AttributeName: ttl
+
+  # --- S3 Bucket for User Pool State ---
+  UserPoolStateBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub '${AWS::StackName}-user-pool-state-${AWS::AccountId}'
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      VersioningConfiguration:
+        Status: Enabled
+
+  # --- Dashboard Embed Lambda ---
+  DashboardEmbedFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub '${AWS::StackName}-dashboard-embed'
+      # CodeUri is the backend root (not the function subfolder) so that the
+      # sibling shared/ modules are included in the deployment package and the
+      # handler's `require('../shared/...')` resolves at runtime.
+      Handler: dashboard-embed/index.handler
+      CodeUri: ./
+      Description: Generates QuickSight dashboard embed URLs for registered users
+      Environment:
+        Variables:
+          QUICKSIGHT_ACCOUNT_ID: !Ref QuickSightAccountId
+          QUICKSIGHT_REGION: !Ref QuickSightRegion
+          QUICKSIGHT_NAMESPACE: !Ref QuickSightNamespace
+          ALLOWED_DASHBOARD_IDS: !Join [',', !Ref DashboardIds]
+          ALLOWED_ORIGINS: !Join [',', !Ref AllowedOrigins]
+          DASHBOARD_EMBED_USER_ARN: !Ref DashboardEmbedUserArn
+          EMBED_IDENTITY_MODE: !Ref EmbedIdentityMode
+          AUDIT_TABLE_NAME: !Ref AuditLogTable
+          AUDIT_TTL_DAYS: !Ref AuditLogTtlDays
+          RATE_LIMIT_PER_MINUTE: !Ref RateLimitPerMinute
+      Role: !GetAtt DashboardEmbedFunctionRole.Arn
+      Events:
+        PostDashboardEmbed:
+          Type: Api
+          Properties:
+            RestApiId: !Ref EmbedApi
+            Path: /dashboard-embed
+            Method: POST
+
+  DashboardEmbedFunctionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub '${AWS::StackName}-dashboard-embed-role'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: QuickSightDashboardEmbedPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Sid: QuickSightEmbedPermissions
+                Effect: Allow
+                Action:
+                  - quicksight:GenerateEmbedUrlForRegisteredUser
+                  - quicksight:DescribeDashboard
+                  - quicksight:DescribeUser
+                  - quicksight:RegisterUser
+                Resource:
+                  - !Sub 'arn:aws:quicksight:${QuickSightRegion}:${QuickSightAccountId}:user/${QuickSightNamespace}/*'
+                  - !Sub 'arn:aws:quicksight:${QuickSightRegion}:${QuickSightAccountId}:dashboard/*'
+        - PolicyName: DynamoDBWritePolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Sid: AuditLogWrite
+                Effect: Allow
+                Action:
+                  - dynamodb:PutItem
+                  - dynamodb:UpdateItem
+                Resource:
+                  - !GetAtt AuditLogTable.Arn
+
+  # --- Chat Embed Lambda ---
+  ChatEmbedFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub '${AWS::StackName}-chat-embed'
+      # CodeUri is the backend root (not the function subfolder) so that the
+      # sibling shared/ modules are included in the deployment package and the
+      # handler's `require('../shared/...')` resolves at runtime.
+      Handler: chat-embed/index.handler
+      CodeUri: ./
+      Description: Generates QuickSight Q&A chat embed URLs (single shared user, or LRU pool for 2+ users)
+      Environment:
+        Variables:
+          QUICKSIGHT_ACCOUNT_ID: !Ref QuickSightAccountId
+          QUICKSIGHT_REGION: !Ref QuickSightRegion
+          QUICKSIGHT_NAMESPACE: !Ref QuickSightNamespace
+          CHAT_USER_ARNS: !Join [',', !Ref ChatUserArns]
+          CHAT_ENABLED: !Ref ChatEnabled
+          EMBED_IDENTITY_MODE: !Ref EmbedIdentityMode
+          USER_POOL_BUCKET: !Ref UserPoolStateBucket
+          USER_POOL_KEY: user-pool-state.json
+          ALLOWED_ORIGINS: !Join [',', !Ref AllowedOrigins]
+          AUDIT_TABLE_NAME: !Ref AuditLogTable
+          AUDIT_TTL_DAYS: !Ref AuditLogTtlDays
+          RATE_LIMIT_PER_MINUTE: !Ref RateLimitPerMinute
+      Role: !GetAtt ChatEmbedFunctionRole.Arn
+      Events:
+        PostChatEmbed:
+          Type: Api
+          Properties:
+            RestApiId: !Ref EmbedApi
+            Path: /chat-embed
+            Method: POST
+
+  ChatEmbedFunctionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub '${AWS::StackName}-chat-embed-role'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: QuickSightChatEmbedPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Sid: QuickSightChatPermissions
+                Effect: Allow
+                Action:
+                  - quicksight:GenerateEmbedUrlForRegisteredUser
+                  - quicksight:DescribeUser
+                  - quicksight:RegisterUser
+                  - quicksight:DescribeTopic
+                  - quicksight:ListTopics
+                Resource:
+                  - !Sub 'arn:aws:quicksight:${QuickSightRegion}:${QuickSightAccountId}:user/${QuickSightNamespace}/*'
+                  - !Sub 'arn:aws:quicksight:${QuickSightRegion}:${QuickSightAccountId}:topic/*'
+        - PolicyName: DynamoDBWritePolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Sid: AuditLogWrite
+                Effect: Allow
+                Action:
+                  - dynamodb:PutItem
+                  - dynamodb:UpdateItem
+                Resource:
+                  - !GetAtt AuditLogTable.Arn
+        - PolicyName: S3UserPoolStatePolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Sid: UserPoolStateReadWrite
+                Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:PutObject
+                Resource:
+                  - !Sub '${UserPoolStateBucket.Arn}/user-pool-state.json'
+              # ListBucket so a not-yet-created state object returns a clean
+              # 404 (NoSuchKey) instead of 403 (AccessDenied) on first run.
+              - Sid: UserPoolStateList
+                Effect: Allow
+                Action:
+                  - s3:ListBucket
+                Resource:
+                  - !GetAtt UserPoolStateBucket.Arn
+
+# --- Outputs ---
+Outputs:
+  ApiEndpoint:
+    Description: API Gateway endpoint URL
+    Value: !Sub 'https://${EmbedApi}.execute-api.${AWS::Region}.amazonaws.com/prod'
+
+  DashboardEmbedUrl:
+    Description: Dashboard embed endpoint
+    Value: !Sub 'https://${EmbedApi}.execute-api.${AWS::Region}.amazonaws.com/prod/dashboard-embed'
+
+  ChatEmbedUrl:
+    Description: Chat embed endpoint
+    Value: !Sub 'https://${EmbedApi}.execute-api.${AWS::Region}.amazonaws.com/prod/chat-embed'
+
+  AuditLogTableName:
+    Description: DynamoDB audit log table name
+    Value: !Ref AuditLogTable
+
+  UserPoolStateBucketName:
+    Description: S3 bucket for user pool state
+    Value: !Ref UserPoolStateBucket
+
+  CognitoUserPoolId:
+    Description: Cognito User Pool ID
+    Value: !Ref EmbedUserPool
+
+  CognitoUserPoolClientId:
+    Description: Cognito User Pool app client ID
+    Value: !Ref EmbedUserPoolClient
+
+  CognitoHostedUiDomain:
+    Description: Cognito Hosted UI base URL
+    Value: !Sub 'https://${CognitoDomainPrefix}.auth.${AWS::Region}.amazoncognito.com'
